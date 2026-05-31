@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TIN PLATE — INVENT</title>
+  <?!= include('Styles') ?>
+</head>
+<body>
+  <header>
+    <h1>
+      <span class="headerTitle">
+        <span class="companyName">TIN PLATE HOSPITALITY GROUP, LLC</span>
+        <span class="portalName">BEVERAGE MANAGEMENT PORTAL</span>
+      </span>
+      <div class="headerActions"></div>
+      <span id="savePill" class="pill">Idle</span>
+    </h1>
+    <div class="headerRow">
+      <div class="pageTabs">
+        <button class="pageTabBtn active" data-page="inventory" onclick="showPage_('inventory')" data-btn-key="page-inventory" data-btn-rename="1">INVENTORY</button>
+        <button class="pageTabBtn" data-page="ordering" onclick="showPage_('ordering')" data-btn-key="page-ordering" data-btn-rename="1">ORDERING</button>
+        <button class="pageTabBtn" data-page="settings" onclick="showPage_('settings')" data-btn-key="page-settings" data-btn-rename="1">SETTINGS</button>
+        <button id="toggleLayoutEditBtn" class="orderGuidesBtn danger" onclick="toggleLayoutEditMode_()" data-btn-key="settings-layout" data-btn-rename="1">EDIT LAYOUT</button>
+      </div>
+      <div class="rightControls">
+        <div class="headerFieldGroup">
+          <div style="flex: 1 1 auto;">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Date</div>
+            <input id="lastCompleted" type="date" onchange="saveMeta()" />
+          </div>
+          <div style="width: 92px;">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Initials</div>
+            <input id="initials"
+                   type="text"
+                   maxlength="3"
+                   inputmode="text"
+                   autocomplete="off"
+                   autocapitalize="characters"
+                   placeholder="ABC"
+                   oninput="enforceInitials();"
+                   onchange="saveMeta()" />
+          </div>
+        </div>
+        <div class="headerActionBtns">
+          <button class="smallBtn iconBtn" style="min-width:86px;" onclick="openPrintModal()" title="Print" aria-label="Print" data-btn-key="print" data-btn-rename="1" data-btn-icon="1" data-btn-default="Print">
+            <svg class="iconSvg" viewBox="0 0 24 24" stroke-width="1.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <path d="M17.5714 18H20.4C20.7314 18 21 17.7314 21 17.4V11C21 8.79086 19.2091 7 17 7H7C4.79086 7 3 8.79086 3 11V17.4C3 17.7314 3.26863 18 3.6 18H6.42857" stroke="currentColor" stroke-width="1.5"></path>
+              <path d="M8 7V3.6C8 3.26863 8.26863 3 8.6 3H15.4C15.7314 3 16 3.26863 16 3.6V7" stroke="currentColor" stroke-width="1.5"></path>
+              <path d="M6.09782 20.3151L6.42855 18L6.92639 14.5151C6.96862 14.2196 7.22177 14 7.52036 14H16.4796C16.7782 14 17.0313 14.2196 17.0736 14.5151L17.5714 18L17.9021 20.3151C17.9538 20.6766 17.6733 21 17.3082 21H6.69179C6.32666 21 6.04618 20.6766 6.09782 20.3151Z" stroke="currentColor" stroke-width="1.5"></path>
+              <path d="M17 10.01L17.01 9.99889" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </button>
+          <button class="smallBtn iconBtn emailIcon" style="min-width:86px;" onclick="openEmailModal()" title="Email" aria-label="Email" data-btn-key="email" data-btn-rename="1" data-btn-icon="1" data-btn-default="Email">
+            <svg class="iconSvg" viewBox="0 0 24 24" stroke-width="1.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <path d="M5 9L9.5 12L14 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M17 19H3C1.89543 19 1 18.1046 1 17V7C1 5.89543 1.89543 5 3 5H16C17.1046 5 18 5.89543 18 7V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+              <path d="M17 14H23M23 14L20 11M23 14L20 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <p class="sub">Emails send as <?= senderEmail ?>. Double click edit buttons. Edits autosave.</p>
+    <div id="banner"></div>
+  </header>
+  <div id="pageInventory" class="pagePanel active">
+    <div id="leftNav" class="leftNav"></div>
+    <div id="rightNav" class="rightNav"></div>
+    <div class="wrap">
+      <div id="printPages" class="printPages"></div>
+      <div id="printMeasure" class="printMeasure"></div>
+      <div id="rows"></div>
+      <div id="status" class="status"></div>
+    </div>
+    <div class="bottomBar">
+      <input id="q" type="text" placeholder="Search item name..." oninput="applyFilter()" />
+      <button class="smallBtn" style="min-width:120px;" onclick="clearSearch()" data-btn-key="search-clear" data-btn-rename="1">CLEAR</button>
+    </div>
+  </div>
+  <div id="pageOrdering" class="pagePanel">
+    <div class="orderingWrap">
+      <div class="orderingFrameWrap">
+        <div id="orderingFrameLoader" class="orderingFrameLoader">
+          <span>Loading order guides…</span>
+        </div>
+        <iframe
+          id="orderingFrame"
+          class="orderingFrame"
+          src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTTUOjfSqA7r1vFloGuy_7TvRlbpZ2XJDZ9xRm_JZLlvHtD2yntD_AY3xTmLwUs7U30tZjG3-748ypC/pubhtml?widget=true&amp;headers=false"
+          title="Ordering"
+          loading="lazy"
+          onload="document.getElementById('orderingFrameLoader').classList.add('hidden')"></iframe>
+      </div>
+    </div>
+  </div>
+  <div id="pageSettings" class="pagePanel">
+    <div class="orderingWrap">
+      <div class="settingsPageCard">
+        <div class="label" style="justify-content:flex-start; text-align:left;">Open Settings to manage customization and system tools.</div>
+        <button class="primary" onclick="openSettingsModal()" data-btn-key="settings-open" data-btn-rename="1">Open Settings</button>
+      </div>
+    </div>
+  </div>
+  <!-- LOADING OVERLAY -->
+  <div id="loadingOverlay" class="overlay loadingOverlay" aria-live="polite" aria-busy="true">
+    <div class="loadingCard" role="status">
+      <div id="loadingTitle" class="loadingTitle">Loading</div>
+      <div id="loadingSpinner" class="loadingSpinner" aria-hidden="true"></div>
+      <div id="loadingPercentRow" class="loadingPercentRow">
+        <span id="loadingPercent" class="loadingPercent">0%</span>
+      </div>
+      <div id="loadingDetail" class="loadingDetail">
+        <span id="loadingDetailText"></span>
+        <span id="loadingDetailDots" class="loadingDots" aria-hidden="true">
+          <span>.</span><span>.</span><span>.</span>
+        </span>
+      </div>
+    </div>
+  </div>
+  <!-- ORDER GUIDES MODAL -->
+  <div id="orderGuidesOverlay" class="overlay" onclick="orderGuidesOverlayClick(event)">
+    <div class="modal orderGuidesModal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>ORDER GUIDES</span>
+        <button class="modalClose" onclick="closeOrderGuides()" data-btn-key="order-guides-close" data-btn-rename="1">Close</button>
+      </div>
+      <iframe
+        id="orderGuidesFrame"
+        class="orderGuidesFrame"
+        src=""
+        title="Order Guides"
+        loading="lazy"></iframe>
+      <div class="help" style="margin-top:10px;">Select sheets to include in a combined PDF download.</div>
+      <div class="printList" id="orderGuideSheetList"></div>
+      <div class="actions">
+        <button class="primary" onclick="downloadOrderGuideSelection_()" data-btn-key="order-guides-download" data-btn-rename="1">Download Selected PDF</button>
+        <button class="primary" onclick="printOrderGuideFromModal_()" data-btn-key="order-guides-print" data-btn-rename="1">Download / Print PDF</button>
+        <button class="success" onclick="openOrderGuideEmail_('order')" data-btn-key="order-guides-email-order" data-btn-rename="1">Email for Order</button>
+        <button onclick="openOrderGuideEmail_('question')" data-btn-key="order-guides-email-question" data-btn-rename="1">Email for Question</button>
+      </div>
+    </div>
+  </div>
+  <!-- INVENTORY COLUMNS MODAL -->
+  <div id="inventoryColumnsOverlay" class="overlay" onclick="inventoryColumnsOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>AREA FILTER</span>
+        <button class="modalClose" onclick="closeInventoryColumnsModal()" data-btn-key="inventory-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Enable or disable section input columns. Values remain visible but only editable when enabled.</div>
+      <div class="help" style="margin-top:6px;">Use ALL toggles to apply a label across sections (BAR, OFFICE, WALK-IN, etc).</div>
+      <div id="inventoryColumnsAll" class="inventoryColumnsAll"></div>
+      <div id="inventoryColumnsList" class="inventoryColumnsList"></div>
+      <div class="actions">
+        <button class="primary" onclick="saveInventoryColumns_()" data-btn-key="inventory-save" data-btn-rename="1">Save</button>
+        <button onclick="closeInventoryColumnsModal()" data-btn-key="inventory-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- SETTINGS MODAL -->
+  <div id="settingsOverlay" class="overlay" onclick="settingsOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>SETTINGS</span>
+        <button class="modalClose" onclick="closeSettingsModal()" data-btn-key="settings-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="actions settingsActions">
+        <button class="primary" onclick="openCustomizeModal()" data-btn-key="settings-customize" data-btn-rename="1">Customize</button>
+        <button class="primary" onclick="openDistributorsModal()" data-btn-key="settings-distributors" data-btn-rename="1">Distributors</button>
+        <button class="primary" onclick="openManageDistributorsModal()" data-btn-key="settings-manage-distributors" data-btn-rename="1">Manage Distributors</button>
+        <button id="toggleHideDisabledInputsBtn" class="danger" onclick="toggleHideDisabledInputs_()" data-btn-key="settings-hide-disabled" data-btn-rename="1">Hide Disabled Inputs</button>
+        <button class="danger" onclick="settingsEraseData()" data-btn-key="settings-erase" data-btn-rename="1">Erase Data</button>
+        <button class="danger" onclick="openDeleteSectionsModal()" data-btn-key="settings-delete-sections" data-btn-rename="1">Delete Sections</button>
+        <button class="success" onclick="settingsReloadData()" data-btn-key="settings-reload" data-btn-rename="1">Reload Data</button>
+        <button class="primary" onclick="exportWebappData_()" data-btn-key="settings-export" data-btn-rename="1">Export</button>
+        <button onclick="triggerImportWebappData_()" data-btn-key="settings-import" data-btn-rename="1">Import</button>
+      </div>
+    </div>
+  </div>
+  <!-- DISTRIBUTORS MODAL -->
+  <div id="distributorsOverlay" class="overlay" onclick="distributorsOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>DISTRIBUTORS</span>
+        <button class="modalClose" onclick="closeDistributorsModal()" data-btn-key="distributors-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Custom distributors and order‑guide routing.</div>
+      <div id="distributorsList" class="distributorList"></div>
+    </div>
+  </div>
+  <!-- MANAGE DISTRIBUTORS MODAL -->
+  <div id="manageDistributorsOverlay" class="overlay" onclick="manageDistributorsOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>MANAGE DISTRIBUTORS</span>
+        <button class="modalClose" onclick="closeManageDistributorsModal()" data-btn-key="manage-distributors-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="addGrid">
+        <div class="cell">
+          <div class="label" style="justify-content:flex-start; text-align:left;">Select Distributor</div>
+          <select id="manageDistributorSelect" onchange="loadManageDistributor_()"></select>
+        </div>
+        <div class="cell">
+          <div class="label" style="justify-content:flex-start; text-align:left;">Reference Letter</div>
+          <input id="manageDistributorRef" type="text" disabled />
+        </div>
+      </div>
+      <div class="addCard" style="margin-top:10px;">
+        <div class="addGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Distributor Name</div>
+            <input id="manageDistributorName" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Sheet Name</div>
+            <input id="manageDistributorSheetName" type="text" list="manageDistributorSheetList" />
+            <datalist id="manageDistributorSheetList"></datalist>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Representative Name</div>
+            <input id="manageDistributorRepName" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Representative Phone</div>
+            <input id="manageDistributorRepPhone" type="text" inputmode="tel" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Template Sheet</div>
+            <select id="manageDistributorTemplate"></select>
+          </div>
+        </div>
+      </div>
+      <div class="help" style="margin-top:10px;">Order by day</div>
+      <div class="printList" id="manageDistributorOrderDays">
+        <label class="printRow"><input type="checkbox" value="sun" /> <span class="labelText">Sunday</span></label>
+        <label class="printRow"><input type="checkbox" value="mon" /> <span class="labelText">Monday</span></label>
+        <label class="printRow"><input type="checkbox" value="tue" /> <span class="labelText">Tuesday</span></label>
+        <label class="printRow"><input type="checkbox" value="wed" /> <span class="labelText">Wednesday</span></label>
+        <label class="printRow"><input type="checkbox" value="thu" /> <span class="labelText">Thursday</span></label>
+        <label class="printRow"><input type="checkbox" value="fri" /> <span class="labelText">Friday</span></label>
+        <label class="printRow"><input type="checkbox" value="sat" /> <span class="labelText">Saturday</span></label>
+      </div>
+      <div class="tableNav" style="margin-top:12px;">
+        <button onclick="prevManageDistributorTable_()" data-btn-key="manage-distributor-prev-table" data-btn-rename="1">Prev Table</button>
+        <button onclick="nextManageDistributorTable_()" data-btn-key="manage-distributor-next-table" data-btn-rename="1">Next Table</button>
+        <div id="manageDistributorTableLabel" class="label" style="margin-left:auto;"></div>
+      </div>
+      <div class="addGrid" style="margin-top:10px;">
+        <div class="cell">
+          <div class="label" style="justify-content:flex-start; text-align:left;">Table Count</div>
+          <div style="display:flex; gap:8px;">
+            <input id="manageDistributorTableCount" type="number" min="1" max="10" step="1" />
+            <button onclick="updateManageDistributorTableCount_()" data-btn-key="manage-distributor-update-count" data-btn-rename="1">Update</button>
+          </div>
+        </div>
+      </div>
+      <div class="help" style="margin-top:8px;">Select categories for this table.</div>
+      <div id="manageDistributorCategoryList" class="categoryList"></div>
+      <div class="help" style="margin-top:10px;">Assignments</div>
+      <div id="manageDistributorTableSummary" class="tableSummary"></div>
+      <div class="actions">
+        <button class="primary" onclick="saveManageDistributor_()" data-btn-key="manage-distributor-save" data-btn-rename="1">Save Changes</button>
+        <button class="danger" onclick="deleteManageDistributor_()" data-btn-key="manage-distributor-delete" data-btn-rename="1">Delete Distributor</button>
+        <button onclick="openAddDistributorModal()" data-btn-key="manage-distributor-add" data-btn-rename="1">Add New Distributor</button>
+        <button onclick="closeManageDistributorsModal()" data-btn-key="manage-distributor-close-btn" data-btn-rename="1">Close</button>
+      </div>
+    </div>
+  </div>
+  <!-- SETTINGS PIN MODAL -->
+  <div id="settingsPinOverlay" class="overlay" onclick="settingsPinOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>SETTINGS PIN</span>
+        <button class="modalClose" onclick="closeSettingsPinModal()" data-btn-key="settings-pin-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Enter PIN to open Settings.</div>
+      <div class="cell" style="margin-top:10px;">
+        <div class="label" style="justify-content:flex-start; text-align:left;">PIN</div>
+        <input id="settingsPinInput" type="password" inputmode="numeric" autocomplete="one-time-code" />
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="confirmSettingsPin_()" data-btn-key="settings-pin-submit" data-btn-rename="1">Unlock</button>
+        <button onclick="closeSettingsPinModal()" data-btn-key="settings-pin-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <input id="settingsImportFile" type="file" accept="application/json" style="display:none;" />
+  <!-- CUSTOMIZE MODAL -->
+  <div id="customizeOverlay" class="overlay" onclick="customizeOverlayClick(event)">
+    <div class="modal customizeModal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>CUSTOMIZE</span>
+        <button class="modalClose" onclick="closeCustomizeModal()" data-btn-key="customize-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Edit text, button styles, and theme colors. Saved settings sync to the sheet.</div>
+      <div class="customizeSection">
+        <div class="customizeSectionTitle">Text</div>
+        <div class="customizeGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Page Title (browser)</div>
+            <input id="customPageTitle" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Heading Line 1</div>
+            <input id="customHeading1" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Heading Line 2</div>
+            <input id="customHeading2" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Subheading</div>
+            <input id="customSubheading" type="text" />
+          </div>
+        </div>
+        <div class="customizeGrid" style="margin-top:10px;">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Heading Align</div>
+            <select id="customHeadingAlign">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Subheading Align</div>
+            <select id="customSubAlign">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Ribbon Width Scale (1.0–3.0)</div>
+            <input id="customNavScale" type="number" min="1" max="3" step="0.1" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Ribbon Height Scale (0.5–4.0)</div>
+            <input id="customNavHeightScale" type="number" min="0.5" max="4" step="0.1" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Ribbon Slot Spacing (px)</div>
+            <input id="customNavSlotGap" type="number" min="0" max="160" step="1" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Heading 1 Size (px)</div>
+            <input id="customHeading1Size" type="number" min="10" max="120" step="1" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Heading 2 Size (px)</div>
+            <input id="customHeading2Size" type="number" min="10" max="120" step="1" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Subheading Size (px)</div>
+            <input id="customSubSize" type="number" min="10" max="60" step="1" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Heading 1 Color</div>
+            <input id="customHeading1Color" type="text" placeholder="#ffffff or rgba(...)" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Heading 2 Color</div>
+            <input id="customHeading2Color" type="text" placeholder="#ffffff or rgba(...)" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Subheading Color</div>
+            <input id="customSubColor" type="text" placeholder="#ffffff or rgba(...)" />
+          </div>
+        </div>
+      </div>
+      <div class="customizeSection">
+        <div class="customizeSectionTitle">Buttons</div>
+        <div class="help" style="margin-top:0;">Set a base color and a highlight color for each button.</div>
+        <div id="customizeButtonList" class="customizeList"></div>
+      </div>
+      <div class="customizeSection">
+        <div class="customizeSectionTitle">Ribbon Positions</div>
+        <div class="help" style="margin-top:0;">Positions 1–16, top to bottom. Height scale is per button.</div>
+        <div class="customizeGrid" style="margin-top:10px;">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Left Ribbon</div>
+            <div id="customizeLeftPositions" class="customizeList"></div>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Right Ribbon</div>
+            <div id="customizeRightPositions" class="customizeList"></div>
+          </div>
+        </div>
+      </div>
+      <div class="customizeSection">
+        <div class="customizeSectionTitle">Colors</div>
+        <div class="help" style="margin-top:0;">Edit any theme color variables.</div>
+        <div id="customizeColorList" class="customizeList"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="saveCustomizeSettings_()" data-btn-key="customize-save" data-btn-rename="1">Save</button>
+        <button onclick="discardCustomizeSettings_()" data-btn-key="customize-discard" data-btn-rename="1">Discard</button>
+      </div>
+    </div>
+  </div>
+  <!-- CLEAR FIELDS MODAL -->
+  <div id="clearOverlay" class="overlay" onclick="clearOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>CLEAR FIELDS</span>
+        <button class="modalClose" onclick="closeClearModal()" data-btn-key="clear-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Choose which sections to clear. Clears only editable inputs currently shown in those sections.</div>
+      <div id="clearList" class="clearList"></div>
+      <div class="actions">
+        <button class="danger" onclick="confirmClearSelectedSections_()" data-btn-key="clear-confirm" data-btn-rename="1">Clear Selected</button>
+        <button onclick="closeClearModal()" data-btn-key="clear-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- DELETE SECTIONS MODAL -->
+  <div id="deleteSectionsOverlay" class="overlay" onclick="deleteSectionsOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>DELETE SECTIONS</span>
+        <button class="modalClose" onclick="closeDeleteSectionsModal()" data-btn-key="delete-sections-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Deletes entire sections and all contained items. This cannot be undone.</div>
+      <div id="deleteSectionsList" class="clearList"></div>
+      <div class="actions">
+        <button class="danger" onclick="confirmDeleteSections_()" data-btn-key="delete-sections-confirm" data-btn-rename="1">Delete Selected</button>
+        <button onclick="closeDeleteSectionsModal()" data-btn-key="delete-sections-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- EDIT SECTION MODAL -->
+  <div id="sectionEditOverlay" class="overlay" onclick="sectionEditOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>EDIT SECTION</span>
+        <button class="modalClose" onclick="closeSectionEditModal()" data-btn-key="section-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="editInfo" id="sectionEditInfo"></div>
+      <div class="addCard editCard">
+        <div class="editDetailsGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Section Type</div>
+            <select id="sectionEditType">
+              <option value="home">HOME LOCATION</option>
+              <option value="secondary">SECONDARY LOCATION</option>
+            </select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Section Title</div>
+            <input id="sectionEditName" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Parent Group</div>
+            <select id="sectionEditGroup"></select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Right Ribbon Label</div>
+            <input id="sectionEditShortcut" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">
+              <input class="lockToggle" id="sectionEditEnableG" type="checkbox" title="Enable input" />
+              Column 1 Label
+            </div>
+            <input id="sectionEditLabel1" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">
+              <input class="lockToggle" id="sectionEditEnableH" type="checkbox" title="Enable input" />
+              Column 2 Label
+            </div>
+            <input id="sectionEditLabel2" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">
+              <input class="lockToggle" id="sectionEditEnableJ" type="checkbox" title="Enable input" />
+              Column 3 Label
+            </div>
+            <input id="sectionEditLabel3" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Heading Align</div>
+            <select id="sectionEditAlign">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Section Color</div>
+            <input id="sectionEditColor" type="color" />
+          </div>
+        </div>
+      </div>
+      <div class="addCard editCard">
+        <div class="customizeSectionTitle">Line Markers</div>
+        <div id="sectionLineList" class="lineEditorList"></div>
+        <div class="actions">
+          <button class="primary" onclick="addSectionLine_()" data-btn-key="section-line-add" data-btn-rename="1">Add Line</button>
+        </div>
+      </div>
+      <div class="actions sectionEditActions">
+        <button class="primary" onclick="openShortcutModal_()" data-btn-key="section-shortcuts" data-btn-rename="1">Shortcut Items</button>
+        <button class="primary" onclick="saveSectionEditModal()" data-btn-key="section-save" data-btn-rename="1">Save</button>
+        <button onclick="closeSectionEditModal()" data-btn-key="section-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- SHORTCUT ITEMS MODAL -->
+  <div id="shortcutOverlay" class="overlay" onclick="shortcutOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>SHORTCUT ITEMS</span>
+        <button class="modalClose" onclick="closeShortcutModal()" data-btn-key="shortcut-close" data-btn-rename="1">Close</button>
+      </div>
+      <div id="shortcutSectionName" class="help" style="margin-top:0;"></div>
+      <div class="help" style="margin-top:6px;">Select items to show as shortcuts in this section. Shift-click selects a range. Drag to select/deselect.</div>
+      <div class="sectionItemTable sectionItemTable4">
+        <div id="shortcutTableHead" class="sectionItemHead"></div>
+        <div id="shortcutItemTableBody" class="sectionItemTableBody"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="saveShortcutItems_()" data-btn-key="shortcut-save" data-btn-rename="1">Save</button>
+        <button onclick="closeShortcutModal()" data-btn-key="shortcut-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- EDIT GROUP MODAL -->
+  <div id="groupEditOverlay" class="overlay" onclick="groupEditOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>EDIT GROUP</span>
+        <button class="modalClose" onclick="closeGroupEditModal()" data-btn-key="group-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="editInfo" id="groupEditInfo"></div>
+      <div class="addCard editCard">
+        <div class="editDetailsGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Group Name</div>
+            <input id="groupEditName" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Parent Group</div>
+            <select id="groupEditParent"></select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Heading Align</div>
+            <select id="groupEditAlign">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Folder Color</div>
+            <input id="groupEditColor" type="color" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">
+              <input class="lockToggle" id="groupEditEnableG" type="checkbox" title="Enable input" />
+              Column 1 Enabled
+            </div>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">
+              <input class="lockToggle" id="groupEditEnableH" type="checkbox" title="Enable input" />
+              Column 2 Enabled
+            </div>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">
+              <input class="lockToggle" id="groupEditEnableJ" type="checkbox" title="Enable input" />
+              Column 3 Enabled
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="addCard editCard">
+        <div class="customizeSectionTitle">Line Markers</div>
+        <div id="groupLineList" class="lineEditorList"></div>
+        <div class="actions">
+          <button class="primary" onclick="addGroupLine_()" data-btn-key="group-line-add" data-btn-rename="1">Add Line</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="groupEditHideDisabledBtn" class="danger" onclick="toggleGroupEditHideDisabled_()" data-btn-key="group-hide-disabled" data-btn-rename="1">Hide Disabled Inputs</button>
+        <button class="primary" onclick="saveGroupEditModal()" data-btn-key="group-save" data-btn-rename="1">Save</button>
+        <button onclick="closeGroupEditModal()" data-btn-key="group-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- PRINT MODAL -->
+  <div id="printOverlay" class="overlay" onclick="printOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>PRINT</span>
+        <button class="modalClose" onclick="closePrintModal()" data-btn-key="print-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Select what to print. Order guide opens a PDF; inventory prints from this page.</div>
+      <div class="printList">
+        <label class="printRow">
+          <input type="checkbox" id="printOrderGuideBox" checked />
+          <span class="labelText">ALL ORDER GUIDES - FILLED OUT</span>
+        </label>
+        <label class="printRow">
+          <input type="checkbox" id="printInventoryBox" checked />
+          <span class="labelText">BEVERAGE INVENTORY - FILLED OUT</span>
+        </label>
+        <label class="printRow">
+          <input type="checkbox" id="printInventoryBlankBox" />
+          <span class="labelText">BEVERAGE INVENTORY - BLANK COUNTS</span>
+        </label>
+        <label class="printRow">
+          <input type="checkbox" id="printOrderGuideBlankBox" />
+          <span class="labelText">ALL ORDER GUIDES - BLANK COUNTS</span>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="confirmPrintSelection_()" data-btn-key="print-confirm" data-btn-rename="1">Print Selected</button>
+        <button class="primary" onclick="downloadPrintZip_()" data-btn-key="print-zip" data-btn-rename="1">Download ZIP</button>
+        <button onclick="closePrintModal()" data-btn-key="print-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- EMAIL MODAL -->
+  <div id="emailOverlay" class="overlay" onclick="emailOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>EMAIL</span>
+        <button class="modalClose" onclick="closeEmailModal()" data-btn-key="email-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Select what to attach, then enter recipients, subject, and body.</div>
+      <div class="printList">
+        <label class="printRow">
+          <input type="checkbox" id="emailOrderGuideBox" checked />
+          <span class="labelText">ALL ORDER GUIDES - FILLED OUT</span>
+        </label>
+        <label class="printRow">
+          <input type="checkbox" id="emailInventoryBox" checked />
+          <span class="labelText">BEVERAGE INVENTORY - FILLED OUT</span>
+        </label>
+        <label class="printRow">
+          <input type="checkbox" id="emailInventoryBlankBox" />
+          <span class="labelText">BEVERAGE INVENTORY - BLANK COUNTS</span>
+        </label>
+        <label class="printRow">
+          <input type="checkbox" id="emailOrderGuideBlankBox" />
+          <span class="labelText">ALL ORDER GUIDES - BLANK COUNTS</span>
+        </label>
+      </div>
+      <div class="cell" style="margin-top:10px;">
+        <div class="label" style="justify-content:flex-start; text-align:left;">Recipients (comma or semicolon separated)</div>
+        <input id="emailRecipients" type="email" multiple placeholder="name@example.com, other@example.com" />
+      </div>
+      <div class="cell" style="margin-top:10px;">
+        <div class="label" style="justify-content:flex-start; text-align:left;">Subject</div>
+        <input id="emailSubject" type="text" placeholder="TIN PLATE — INVENTORY" />
+      </div>
+      <div class="cell" style="margin-top:10px;">
+        <div class="label" style="justify-content:flex-start; text-align:left;">Body</div>
+        <textarea id="emailBody" rows="5" placeholder="Add notes for the recipient(s)."></textarea>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="sendEmailSelection_()" data-btn-key="email-send" data-btn-rename="1">Send</button>
+        <button onclick="closeEmailModal()" data-btn-key="email-discard" data-btn-rename="1">Discard</button>
+      </div>
+    </div>
+  </div>
+  <!-- DELETE SECTIONS MODAL -->
+  <div id="deleteSectionsOverlay" class="overlay" onclick="deleteSectionsOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>DELETE SECTIONS</span>
+        <button class="modalClose" onclick="closeDeleteSectionsModal()" data-btn-key="delete-sections-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Select sections to delete. Removes the section header and items in INVENT.</div>
+      <div id="deleteSectionsList" class="clearList"></div>
+      <div class="actions">
+        <button class="danger" onclick="confirmDeleteSelectedSections_()" data-btn-key="delete-sections-confirm" data-btn-rename="1">Delete Selected</button>
+        <button onclick="closeDeleteSectionsModal()" data-btn-key="delete-sections-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- EDIT ITEM MODAL -->
+  <div id="editOverlay" class="overlay" onclick="editOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>EDIT ITEM</span>
+        <button class="modalClose" onclick="closeEditModal()" data-btn-key="item-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="editInfo" id="editInfo"></div>
+      <div class="addCard editCard">
+        <div class="editDetailsGrid">
+          <div class="cell">
+          <div class="label" style="justify-content:flex-start; text-align:left;">Section (moves row to bottom)</div>
+          <select id="editSection"></select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Category (Column N)</div>
+            <select id="editCategory"></select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Distributor (Column O)</div>
+            <select id="editVendor"></select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">COMMON NAME (Column B)</div>
+            <input id="editCommon" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">ITEM ORDER NAME (Column C)</div>
+            <input id="editOrder" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">BOTTLE SIZE (Column D)</div>
+            <input id="editSize" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">PAR (Column E)</div>
+            <input id="editPar" type="text" inputmode="decimal" pattern="[0-9]*" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">COST (Column P)</div>
+            <input id="editCost" type="text" inputmode="decimal" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">CS SIZE (Column Q)</div>
+            <input id="editCsSize" type="text" inputmode="decimal" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">NOTES (Column R)</div>
+            <input id="editNotes" type="text" inputmode="text" />
+          </div>
+        </div>
+      </div>
+      <div class="editGrid">
+        <div class="cell">
+          <div class="label" style="justify-content:flex-start; text-align:left;">
+            <input class="lockToggle" id="editLockG" type="checkbox" title="Enable input" />
+            <span id="editLabel1"></span>
+          </div>
+          <input id="editG" type="text" inputmode="decimal" pattern="[0-9]*" />
+        </div>
+        <div class="cell">
+          <div class="label" style="justify-content:flex-start; text-align:left;">
+            <input class="lockToggle" id="editLockH" type="checkbox" title="Enable input" />
+            <span id="editLabel2"></span>
+          </div>
+          <div id="editField2"></div>
+        </div>
+        <div class="cell">
+          <div class="label" style="justify-content:flex-start; text-align:left;">
+            <input class="lockToggle" id="editLockJ" type="checkbox" title="Enable input" />
+            <span id="editLabel3"></span>
+          </div>
+          <input id="editJ" type="text" inputmode="decimal" pattern="[0-9]*" />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="success" id="editDuplicateBtn" type="button" data-btn-key="item-duplicate" data-btn-rename="1">Duplicate</button>
+        <button class="danger" id="editDeleteBtn" type="button" data-btn-key="item-delete" data-btn-rename="1">Delete</button>
+        <button class="primary" onclick="saveEditModal()" data-btn-key="item-save" data-btn-rename="1">Save</button>
+        <button onclick="closeEditModal()" data-btn-key="item-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- ADD ITEM MODAL -->
+  <div id="addOverlay" class="overlay" onclick="addOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>ADD NEW INVENTORY ITEM</span>
+        <button class="modalClose" onclick="closeAddModal()" data-btn-key="add-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="addCard">
+        <div class="addGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Section (adds to bottom of that section)</div>
+            <select id="newSection"></select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Category (Column N)</div>
+            <select id="newCategory"></select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Distributor (Column O)</div>
+            <select id="newVendor"></select>
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">COMMON NAME (Column B)</div>
+            <input id="newCommon" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">ITEM ORDER NAME (Column C)</div>
+            <input id="newOrder" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">BOTTLE SIZE (Column D)</div>
+            <input id="newSize" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">PAR (Column E)</div>
+            <input id="newPar" type="text" inputmode="decimal" pattern="[0-9]*" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">COST (Column P)</div>
+            <input id="newCost" type="text" inputmode="decimal" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">CS SIZE (Column Q)</div>
+            <input id="newCsSize" type="text" inputmode="decimal" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">NOTES (Column R)</div>
+            <input id="newNotes" type="text" inputmode="text" />
+          </div>
+        </div>
+        <div class="actions">
+          <button onclick="addItem()" class="primary" data-btn-key="add-submit" data-btn-rename="1">Add Item</button>
+          <button onclick="clearAddForm()" data-btn-key="add-clear" data-btn-rename="1">Clear</button>
+        </div>
+        <div class="help">
+          Adds at the bottom of the selected section, assigns next unused ID in column M, keeps column I formula consistent (G+H),
+          formats the new row to match “RED ROCKS CASK”, and inserts into the appropriate ordering table (Ordering Sheet column A).
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ADD MENU MODAL -->
+  <div id="addMenuOverlay" class="overlay" onclick="addMenuOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>ADD</span>
+        <button class="modalClose" onclick="closeAddMenu()" data-btn-key="add-menu-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="addMenuGrid">
+        <button class="primary" onclick="openAddItemFromMenu_()" data-btn-key="add-menu-item" data-btn-rename="1">ADD ITEM</button>
+        <button class="primary" onclick="openAddSectionModal()" data-btn-key="add-menu-section" data-btn-rename="1">ADD SECTION</button>
+        <button class="primary" onclick="openAddGroupModal()" data-btn-key="add-menu-group" data-btn-rename="1">ADD GROUP</button>
+        <button class="primary" onclick="openAddDistributorModal()" data-btn-key="add-menu-distributor" data-btn-rename="1">ADD DISTRIBUTOR</button>
+      </div>
+    </div>
+  </div>
+  <!-- ADD SECTION MODAL -->
+  <div id="addSectionOverlay" class="overlay" onclick="addSectionOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>ADD SECTION</span>
+        <button class="modalClose" onclick="closeAddSectionModal()" data-btn-key="add-section-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">
+        Choose HOME to move items into the new section. Choose SECONDARY to create shortcut rows that share the same counts.
+      </div>
+      <div class="sectionTypeRow" style="margin-top:8px;">
+        <label><input type="radio" name="newSectionType" value="home" checked /> HOME LOCATION</label>
+        <label><input type="radio" name="newSectionType" value="secondary" /> SECONDARY LOCATION</label>
+      </div>
+      <div class="addCard" style="margin-top:10px;">
+        <div class="addGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Section Name</div>
+            <input id="newSectionName" type="text" />
+          </div>
+        </div>
+        <div class="sectionTypeRow" style="margin-top:8px;">
+          <label><input id="addSectionMulti" type="checkbox" onchange="toggleAddSectionMulti_()" /> Multi-Create?</label>
+        </div>
+        <div id="addSectionMultiHelp" class="help" style="margin-top:6px;">Creates one section per selected row using its name.</div>
+        <div class="sectionColumnsGrid">
+          <div class="sectionColumnsRow">
+            <div class="colToggle"><input id="newSectionEnableG" type="checkbox" checked /></div>
+            <div class="cell">
+              <div class="label" style="justify-content:flex-start; text-align:left;">Column 1 Label</div>
+              <input id="newSectionLabelG" type="text" placeholder="BAR" />
+            </div>
+          </div>
+          <div class="sectionColumnsRow">
+            <div class="colToggle"><input id="newSectionEnableH" type="checkbox" checked /></div>
+            <div class="cell">
+              <div class="label" style="justify-content:flex-start; text-align:left;">Column 2 Label</div>
+              <input id="newSectionLabelH" type="text" placeholder="OTHER" />
+            </div>
+          </div>
+          <div class="sectionColumnsRow">
+            <div class="colToggle"><input id="newSectionEnableJ" type="checkbox" checked /></div>
+            <div class="cell">
+              <div class="label" style="justify-content:flex-start; text-align:left;">Column 3 Label</div>
+              <input id="newSectionLabelJ" type="text" placeholder="OFFICE" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="addCard" style="margin-top:10px;">
+        <div class="addGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Add Contents By</div>
+            <select id="addSectionMode" onchange="changeAddSectionMode_()">
+              <option value="item">ITEM</option>
+              <option value="category">CATEGORY</option>
+              <option value="distributor">DISTRIBUTOR</option>
+            </select>
+          </div>
+        </div>
+        <div class="help" style="margin-top:8px;">Click headers to sort. Shift-click selects a range. Drag to select/deselect.</div>
+      </div>
+      <div id="addSectionSelectHelp" class="help">Select items to include in this section.</div>
+      <div class="sectionItemTable">
+        <div id="addSectionTableHead" class="sectionItemHead"></div>
+        <div id="sectionItemTableBody" class="sectionItemTableBody addSectionTableBody"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="saveNewSection_()" data-btn-key="add-section-save" data-btn-rename="1">Save Section</button>
+        <button onclick="closeAddSectionModal()" data-btn-key="add-section-cancel" data-btn-rename="1">Discard</button>
+      </div>
+    </div>
+  </div>
+  <!-- ADD GROUP MODAL -->
+  <div id="addGroupOverlay" class="overlay" onclick="addGroupOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>ADD GROUP</span>
+        <button class="modalClose" onclick="closeAddGroupModal()" data-btn-key="add-group-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Select sections to include in a new group.</div>
+      <div class="addCard" style="margin-top:10px;">
+        <div class="addGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Group Name</div>
+            <input id="newGroupName" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Parent Group</div>
+            <select id="addGroupParent"></select>
+          </div>
+        </div>
+      </div>
+      <div class="addCard" style="margin-top:10px;">
+        <div class="addGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">If section is already in a group</div>
+            <select id="addGroupExistingAction">
+              <option value="copy">COPY TO (keep original group)</option>
+              <option value="move">MOVE (remove from original group)</option>
+            </select>
+          </div>
+        </div>
+        <div class="help" style="margin-top:8px;">Copy creates a secondary shortcut section named like “SECTION (GROUP)”.</div>
+      </div>
+      <div class="help">Select sections to include in this group.</div>
+      <div class="sectionItemTable">
+        <div class="sectionItemHead groupSectionRow">
+          <div>SECTION</div>
+          <div>GROUP</div>
+        </div>
+        <div id="groupSectionList" class="sectionItemTableBody"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="saveNewGroup_()" data-btn-key="add-group-save" data-btn-rename="1">Save Group</button>
+        <button onclick="closeAddGroupModal()" data-btn-key="add-group-cancel" data-btn-rename="1">Discard</button>
+      </div>
+    </div>
+  </div>
+  <!-- GROUP TYPE MODAL -->
+  <div id="groupTypeOverlay" class="overlay" onclick="groupTypeOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>GROUP SETTINGS</span>
+        <button class="modalClose" onclick="closeGroupTypeModal()" data-btn-key="group-type-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" id="groupTypeName" style="margin-top:0;"></div>
+      <div class="addCard" style="margin-top:10px;">
+        <div class="addGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Set All Sections To</div>
+            <select id="groupTypeSelect">
+              <option value="home">HOME</option>
+              <option value="secondary">SECONDARY</option>
+            </select>
+          </div>
+        </div>
+        <div class="help" id="groupTypeStatus" style="margin-top:8px;"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="saveGroupType_()" data-btn-key="group-type-save" data-btn-rename="1">Apply</button>
+        <button onclick="closeGroupTypeModal()" data-btn-key="group-type-cancel" data-btn-rename="1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- BY BEVERAGE MODAL -->
+  <div id="typeGroupOverlay" class="overlay" onclick="typeGroupOverlayClick(event)">
+    <div class="modal customizeModal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>BY BEVERAGE SETTINGS</span>
+        <button class="modalClose" onclick="closeTypeGroupModal()" data-btn-key="type-group-close" data-btn-rename="1">Close</button>
+      </div>
+      <div class="help" style="margin-top:0;">Include or exclude categories and distributors from auto-generated lists.</div>
+      <div class="customizeSection">
+        <div class="customizeSectionTitle">Beverage Categories</div>
+        <div id="typeCategoryList" class="filterList"></div>
+      </div>
+      <div class="customizeSection">
+        <div class="customizeSectionTitle">Distributors</div>
+        <div id="typeDistributorList" class="filterList"></div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="saveTypeGroupFilters_()" data-btn-key="type-group-save" data-btn-rename="1">Save</button>
+        <button onclick="closeTypeGroupModal()" data-btn-key="type-group-cancel" data-btn-rename="1">Discard</button>
+      </div>
+    </div>
+  </div>
+  <!-- ADD DISTRIBUTOR MODAL -->
+  <div id="addDistributorOverlay" class="overlay" onclick="addDistributorOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modalTitle">
+        <span>ADD DISTRIBUTOR</span>
+        <button class="modalClose" onclick="closeAddDistributorModal()" data-btn-key="add-distributor-close" data-btn-rename="1">Close</button>
+      </div>
+      <div id="distributorStep1" class="wizardStep active">
+        <div class="addGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Distributor Name</div>
+            <input id="newDistributorName" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Representative Name</div>
+            <input id="newDistributorRepName" type="text" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Representative Phone</div>
+            <input id="newDistributorRepPhone" type="text" inputmode="tel" />
+          </div>
+        </div>
+        <div class="help" style="margin-top:10px;">Order by day</div>
+        <div class="printList" id="newDistributorOrderDays">
+          <label class="printRow"><input type="checkbox" value="sun" /> <span class="labelText">Sunday</span></label>
+          <label class="printRow"><input type="checkbox" value="mon" /> <span class="labelText">Monday</span></label>
+          <label class="printRow"><input type="checkbox" value="tue" /> <span class="labelText">Tuesday</span></label>
+          <label class="printRow"><input type="checkbox" value="wed" /> <span class="labelText">Wednesday</span></label>
+          <label class="printRow"><input type="checkbox" value="thu" /> <span class="labelText">Thursday</span></label>
+          <label class="printRow"><input type="checkbox" value="fri" /> <span class="labelText">Friday</span></label>
+          <label class="printRow"><input type="checkbox" value="sat" /> <span class="labelText">Saturday</span></label>
+        </div>
+        <div class="wizardNav">
+          <button class="primary" onclick="nextDistributorStep_(2)" data-btn-key="add-distributor-next" data-btn-rename="1">Next</button>
+          <button onclick="closeAddDistributorModal()" data-btn-key="add-distributor-cancel" data-btn-rename="1">Cancel</button>
+        </div>
+      </div>
+      <div id="distributorStep2" class="wizardStep">
+        <div class="addGrid">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">How many tables on the order guide?</div>
+            <input id="newDistributorTableCount" type="number" min="1" max="10" step="1" value="1" />
+          </div>
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Template Sheet</div>
+            <select id="newDistributorTemplate"></select>
+          </div>
+        </div>
+        <div class="wizardNav">
+          <button onclick="nextDistributorStep_(1)" data-btn-key="add-distributor-back" data-btn-rename="1">Back</button>
+          <button class="primary" onclick="initDistributorTables_()" data-btn-key="add-distributor-setup" data-btn-rename="1">Next</button>
+        </div>
+      </div>
+      <div id="distributorStep3" class="wizardStep">
+        <div class="tableNav">
+          <button onclick="prevDistributorTable_()" data-btn-key="add-distributor-prev-table" data-btn-rename="1">Prev Table</button>
+          <button onclick="nextDistributorTable_()" data-btn-key="add-distributor-next-table" data-btn-rename="1">Next Table</button>
+          <div id="distributorTableLabel" class="label" style="margin-left:auto;"></div>
+        </div>
+        <div class="addGrid" style="margin-top:10px;">
+          <div class="cell">
+            <div class="label" style="justify-content:flex-start; text-align:left;">Table Count</div>
+            <div style="display:flex; gap:8px;">
+              <input id="newDistributorTableCountInline" type="number" min="1" max="10" step="1" />
+              <button onclick="updateDistributorTableCount_()" data-btn-key="add-distributor-update-count" data-btn-rename="1">Update</button>
+            </div>
+          </div>
+        </div>
+        <div class="help" style="margin-top:8px;">Select categories for this table.</div>
+        <div id="distributorCategoryList" class="categoryList"></div>
+        <div class="help" style="margin-top:10px;">Assignments</div>
+        <div id="distributorTableSummary" class="tableSummary"></div>
+        <div class="wizardNav">
+          <button onclick="nextDistributorStep_(2)" data-btn-key="add-distributor-back-step" data-btn-rename="1">Back</button>
+          <button class="primary" onclick="submitNewDistributor_()" data-btn-key="add-distributor-submit" data-btn-rename="1">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?!= include('JavaScript') ?>
+</body>
+</html
